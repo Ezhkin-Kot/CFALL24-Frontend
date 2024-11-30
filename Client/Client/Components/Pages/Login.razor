@@ -15,7 +15,8 @@
                                id="loginField"
                                placeholder="Enter login"
                                @bind-value="_login"
-                               @bind-value:event="oninput" />
+                               @bind-value:event="oninput"
+                               @onkeypress="@(async (e) => await HandleKeyPress(e))" />
                         <label for="loginField">Login</label>
                         @if (!string.IsNullOrEmpty(_login) && _login.Length < 3)
                         {
@@ -31,7 +32,8 @@
                                id="passwordField"
                                placeholder="Enter password"
                                @bind-value="_password"
-                               @bind-value:event="oninput" />
+                               @bind-value:event="oninput"
+                               @onkeypress="@(async (e) => await HandleKeyPress(e))" />
                         <label for="passwordField">Password</label>
                         @if (!string.IsNullOrEmpty(_password) && _password.Length < 6)
                         {
@@ -73,16 +75,24 @@
 </div>
 
 @code {
-    private string _login;
-    private string _password;
+    private string _login = "";
+    private string _password = "";
     private bool _isProcessing;
-    private string _message;
+    private string _message = "";
     private bool _isError;
     
     private bool IsValid => !string.IsNullOrEmpty(_login) && 
                           _login.Length >= 3 && 
                           !string.IsNullOrEmpty(_password) && 
                           _password.Length >= 6;
+
+    private async Task HandleKeyPress(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter" && IsValid && !_isProcessing)
+        {
+            await LoginUser();
+        }
+    }
 
     private async Task LoginUser()
     {
@@ -100,11 +110,18 @@
                 return;
             }
 
+            Console.WriteLine($"Attempting to login user: {_login}");
             var success = await AuthUser.LoginUser(_login, _password);
             
             if (success)
             {
-                NavigationManager.NavigateTo("/test");
+                _message = "Login successful! Redirecting...";
+                _isError = false;
+                StateHasChanged();
+                
+                // Small delay to show success message
+                await Task.Delay(1000);
+                NavigationManager.NavigateTo("/home");
             }
             else
             {
@@ -117,6 +134,7 @@
             _message = "An error occurred during login.";
             _isError = true;
             Console.WriteLine($"Login error: {ex.Message}");
+            Console.WriteLine($"Stack trace: {ex.StackTrace}");
         }
         finally
         {

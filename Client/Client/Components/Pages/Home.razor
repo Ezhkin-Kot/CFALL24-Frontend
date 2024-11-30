@@ -1,6 +1,6 @@
 @page "/home"
 @using System.Text.Json
-@inject HttpClient Http
+@inject IHttpClientFactory HttpClientFactory
 @inject NavigationManager NavigationManager
 @rendermode InteractiveServer
 @using Client
@@ -83,7 +83,7 @@
             isLoading = true;
             StateHasChanged();
 
-            using var client = new HttpClient();
+            var client = HttpClientFactory.CreateClient();
             var response = await client.GetAsync(preferencesUrl);
             Console.WriteLine($"Preferences API response status: {response.StatusCode}");
 
