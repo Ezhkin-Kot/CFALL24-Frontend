@@ -1,0 +1,102 @@
+@page "/registration"
+<h3>Registration</h3>
+
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6 col-lg-4">
+            <div class="card shadow">
+                <div class="card-body">
+                    <h3 class="card-title text-center mb-4">Registration</h3>
+
+                    <div class="form-floating mb-3">
+                        <input type="text"
+                               class="form-control @(string.IsNullOrEmpty(_login) ? "" : _login.Length < 3 ? "is-invalid" : "is-valid")"
+                               id="loginField"
+                               placeholder="Enter login"
+                               @bind-value="_login"
+                               @bind-value:event="oninput" />
+                        <label for="loginField">Login</label>
+                        @if (!string.IsNullOrEmpty(_login) && _login.Length < 3)
+                        {
+                            <div class="invalid-feedback">
+                                Login must be at least 3 characters
+                            </div>
+                        }
+                    </div>
+
+                    <div class="form-floating mb-3">
+                        <input type="password"
+                               class="form-control @(string.IsNullOrEmpty(_password) ? "" : _password.Length < 6 ? "is-invalid" : "is-valid")"
+                               id="passwordField"
+                               placeholder="Enter password"
+                               @bind-value="_password"
+                               @bind-value:event="oninput" />
+                        <label for="passwordField">Password</label>
+                        @if (!string.IsNullOrEmpty(_password) && _password.Length < 6)
+                        {
+                            <div class="invalid-feedback">
+                                Password must be at least 6 characters
+                            </div>
+                        }
+                    </div>
+
+                    <button class="btn btn-primary w-100 mb-3"
+                            @onclick="RegisterUser"
+                            disabled="@(_isProcessing || !IsValid)">
+                        @if (_isProcessing)
+                        {
+                            <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                            <span>Processing...</span>
+                        }
+                        else
+                        {
+                            <span>Register</span>
+                        }
+                    </button>
+
+                    <div class="text-center">
+                        Already have an account?
+                        <a href="/login" class="text-decoration-none">Login here</a>
+                    </div>
+
+                    @if (!string.IsNullOrEmpty(_message))
+                    {
+                        <div class="alert @(_isError ? "alert-danger" : "alert-success") mt-3">
+                            @_message
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private string _login;
+    private string _password;
+    private bool _isProcessing;
+    private string _message;
+    private bool _isError;
+    
+    private bool IsValid => !string.IsNullOrEmpty(_login) && 
+                            _login.Length >= 3 && 
+                            !string.IsNullOrEmpty(_password) && 
+                            _password.Length >= 6;
+
+    private async Task RegisterUser()
+    {
+        try 
+        {
+            _isProcessing = true;
+            _message = string.Empty;
+            _isError = false;
+            StateHasChanged();
+
+            if (!IsValid)
+            {
+                _message = "Please check your input";
+                _isError = true;
+                return;
+            }
+    }
+}
