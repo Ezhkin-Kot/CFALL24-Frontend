@@ -1,0 +1,174 @@
+@page "/test"
+@using Client
+@rendermode InteractiveServer
+@inject NavigationManager NavigationManager
+
+<div class="container mt-4">
+    <h2 class="mb-4">Test Questions</h2>
+
+    @if (!Questions.Any())
+    {
+        <div class="alert alert-info">
+            Loading questions...
+        </div>
+    }
+    else
+    {
+        var validQuestions = Questions.Where(q => !string.IsNullOrEmpty(q?.Id)).ToList();
+        
+        @foreach (var question in validQuestions)
+        {
+            <div class="card mb-4">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h4 class="card-title">@(question.Category ?? "No category"):</h4>
+                        <h5 class="card-body">@(question.Answer ?? "No answer provided")</h5>
+                    </div>
+                    <div class="btn-group mt-3" role="group">
+                        @for (int i = 1; i <= 10; i++)
+                        {
+                            var value = i;
+                            <div class="form-check form-check-inline">
+                                <input class="form-check-input" 
+                                       type="radio" 
+                                       name="@($"question_{question.Id}")" 
+                                       id="@($"q{question.Id}_a{i}")"
+                                       value="@i"
+                                       checked="@(Answers.ContainsKey(question.Id) && Answers[question.Id] == value)"
+                                       @onchange="@(e => HandleAnswerSelection(question.Id, value))" />
+                                <label class="form-check-label" for="@($"q{question.Id}_a{i}")">
+                                    @i
+                                </label>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        }
+
+        @if (validQuestions.Any())
+        {
+            <div class="d-grid gap-2 col-6 mx-auto mb-4">
+                <button class="btn btn-primary" @onclick="EndTest" disabled="@(!IsTestComplete)">
+                    End Test
+                </button>
+            </div>
+        }
+        else
+        {
+            <div class="alert alert-warning">
+                No valid questions found. Please try again later.
+            </div>
+        }
+    }
+
+    @if (ShowResults)
+    {
+        <div class="alert @(IsError ? "alert-danger" : "alert-success")">
+            @ResultMessage
+        </div>
+    }
+</div>
+
+@code {
+    private List<Question> Questions { get; set; } = new();
+    private Dictionary<string, int> Answers { get; set; } = new();
+    private bool ShowResults { get; set; }
+    private string ResultMessage { get; set; }
+    private bool IsError { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var loadedQuestions = await Question.GetAllQuestions();
+            Questions = loadedQuestions?.Where(q => q != null && !string.IsNullOrEmpty(q.Id)).ToList() ?? new List<Question>();
+            
+            if (!Questions.Any())
+            {
+                ShowResults = true;
+                IsError = true;
+                ResultMessage = "No valid questions found in the database.";
+            }
+        }
+        catch (Exception ex)
+        {
+            ShowResults = true;
+            IsError = true;
+            ResultMessage = "Error loading questions from database.";
+            Console.WriteLine($"Error in OnInitializedAsync: {ex.Message}");
+        }
+    }
+
+    private void HandleAnswerSelection(string questionId, int value)
+    {
+        if (string.IsNullOrEmpty(questionId)) return;
+
+        if (Answers.ContainsKey(questionId))
+        {
+            Answers[questionId] = value;
+        }
+        else
+        {
+            Answers.Add(questionId, value);
+        }
+    }
+
+    private bool IsTestComplete
+    {
+        get
+        {
+            var validQuestions = Questions.Where(q => q != null && !string.IsNullOrEmpty(q.Id)).ToList();
+            return validQuestions.Any() && validQuestions.Count == Answers.Count;
+        }
+    }
+
+    private async Task EndTest()
+    {
+        if (!IsTestComplete)
+        {
+            ShowResults = true;
+            IsError = true;
+            ResultMessage = "Please answer all questions before submitting.";
+            return;
+        }
+
+        try
+        {
+            ShowResults = true;
+            ResultMessage = "Saving your answers...";
+            
+            var successCount = 0;
+            var validQuestions = Questions.Where(q => q != null && !string.IsNullOrEmpty(q.Id)).ToList();
+            
+            foreach (var question in validQuestions)
+            {
+                if (Answers.TryGetValue(question.Id, out int rating))
+                {
+                    var success = await Question.SaveUserPreference("test_user", question.Category, rating);
+                    if (success) successCount++;
+                }
+            }
+
+            if (successCount == validQuestions.Count)
+            {
+                IsError = false;
+                ResultMessage = "Test completed successfully! Redirecting to home page...";
+                await Task.Delay(2000);
+                NavigationManager.NavigateTo("/");
+            }
+            else
+            {
+                IsError = true;
+                ResultMessage = $"Failed to save some answers. Saved {successCount} out of {validQuestions.Count}.";
+            }
+        }
+        catch (Exception ex)
+        {
+            ShowResults = true;
+            IsError = true;
+            ResultMessage = "An error occurred while submitting your answers.";
+            Console.WriteLine($"Error in EndTest: {ex.Message}");
+        }
+    }
+}

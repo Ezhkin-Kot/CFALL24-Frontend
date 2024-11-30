@@ -20,7 +20,6 @@
 /Users/ezhkinkot/Projects/CFALL24-Frontend/Client/Client/obj/Debug/net8.0/staticwebassets/msbuild.buildTransitive.Client.props
 /Users/ezhkinkot/Projects/CFALL24-Frontend/Client/Client/obj/Debug/net8.0/staticwebassets.pack.json
 /Users/ezhkinkot/Projects/CFALL24-Frontend/Client/Client/obj/Debug/net8.0/scopedcss/Components/Layout/MainLayout.razor.rz.scp.css
-/Users/ezhkinkot/Projects/CFALL24-Frontend/Client/Client/obj/Debug/net8.0/scopedcss/Components/Layout/NavMenu.razor.rz.scp.css
 /Users/ezhkinkot/Projects/CFALL24-Frontend/Client/Client/obj/Debug/net8.0/scopedcss/bundle/Client.styles.css
 /Users/ezhkinkot/Projects/CFALL24-Frontend/Client/Client/obj/Debug/net8.0/scopedcss/projectbundle/Client.bundle.scp.css
 /Users/ezhkinkot/Projects/CFALL24-Frontend/Client/Client/obj/Debug/net8.0/Client.dll

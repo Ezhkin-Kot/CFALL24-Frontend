@@ -1,22 +1,24 @@
 using System.Text;
-using System.Net.Http;
-using System.Threading.Tasks;
+using System.Text.Json;
 
 namespace Client;
 
 public class AuthUser
 {
+    public string Login { get; set; }
+    public string Password { get; set; }
+
+    private static readonly string apiUrl = "https://89bf-194-58-31-160.ngrok-free.app/users";
+
     public async Task<bool> CreateUser(string loginStr, string passwordStr)
     {
-        string apiUrl = "https://0c50-194-58-31-160.ngrok-free.app/users";
-
         var user = new
         {
             login = loginStr,
             password = passwordStr
         };
 
-        string json = System.Text.Json.JsonSerializer.Serialize(user);
+        string json = JsonSerializer.Serialize(user);
         Console.WriteLine(json);
 
         using (HttpClient client = new HttpClient())
@@ -27,12 +29,13 @@ public class AuthUser
 
             if (response.IsSuccessStatusCode)
             {
-                Console.WriteLine("Пользователь успешно добавлен.");
+                Console.WriteLine("User created successfully.");
             }
             else
             {
-                Console.WriteLine($"Ошибка: {response.StatusCode}, {await response.Content.ReadAsStringAsync()}");
+                Console.WriteLine($"Error: {response.StatusCode}, {await response.Content.ReadAsStringAsync()}");
             }
+
             return response.IsSuccessStatusCode;
         }
     }
