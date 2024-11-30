@@ -99,27 +99,24 @@
                 _isError = true;
                 return;
             }
-            
-            AuthUser authUser = new AuthUser();
 
-            var success = await authUser.CreateUser(_login, _password);
+            var success = await AuthUser.LoginUser(_login, _password);
             
             if (success)
             {
-                _message = "Login successful!";
-                await Task.Delay(1000);
-                NavigationManager.NavigateTo("/home");
+                NavigationManager.NavigateTo("/test");
             }
             else
             {
-                _message = "Invalid login or password";
+                _message = "Login failed. Please check your credentials.";
                 _isError = true;
             }
         }
         catch (Exception ex)
         {
-            _message = "An error occurred during login";
+            _message = "An error occurred during login.";
             _isError = true;
+            Console.WriteLine($"Login error: {ex.Message}");
         }
         finally
         {

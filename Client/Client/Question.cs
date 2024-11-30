@@ -9,8 +9,8 @@ public class Question
     public string Answer { get; set; }
     public string Category { get; set; }
 
-    private static readonly string apiUrl = "https://89bf-194-58-31-160.ngrok-free.app/questions";
-    private static readonly string preferencesUrl = "https://89bf-194-58-31-160.ngrok-free.app/preferences";
+    private static readonly string apiUrl = "https://830f-194-58-31-160.ngrok-free.app/questions";
+    private static readonly string preferencesUrl = "https://830f-194-58-31-160.ngrok-free.app/preferences";
 
     public static async Task<List<Question>> GetAllQuestions()
     {

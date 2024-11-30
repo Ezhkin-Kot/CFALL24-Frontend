@@ -1,4 +1,248 @@
-﻿@page "/home"
+@page "/home"
+@using System.Text.Json
+@inject HttpClient Http
+@inject NavigationManager NavigationManager
+@rendermode InteractiveServer
+@using Client
 
-<PageTitle>Home</PageTitle>
-<h1>ABOBA</h1>
+<PageTitle>Test Results Comparison</PageTitle>
+
+<div class="container mt-4">
+    @if (AuthUser.CurrentUser == null)
+    {
+        <div class="alert alert-warning">
+            Please <a href="/login">login</a> to view test results comparison.
+        </div>
+    }
+    else
+    {
+        <h1>Test Results Comparison</h1>
+        
+        @if (isLoading)
+        {
+            <div class="spinner-border" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+        }
+        else if (error != null)
+        {
+            <div class="alert alert-danger" role="alert">
+                @error
+            </div>
+        }
+        else if (matchedUsers.Count == 0)
+        {
+            <div class="alert alert-info" role="alert">
+                No matching results found. Please complete the test first.
+            </div>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table table-striped table-hover">
+                    <thead>
+                        <tr>
+                            <th>User</th>
+                            <th>Match Percentage</th>
+                            <th>Common Categories</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var user in matchedUsers)
+                        {
+                            <tr>
+                                <td>@user.Login</td>
+                                <td>@($"{user.MatchPercentage:F1}%")</td>
+                                <td>@user.CommonCategories</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    }
+</div>
+
+@code {
+    private bool isLoading = true;
+    private string? error;
+    private List<MatchedUser> matchedUsers = new();
+    private static readonly string preferencesUrl = "https://830f-194-58-31-160.ngrok-free.app/preferences";
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            if (AuthUser.CurrentUser == null)
+            {
+                Console.WriteLine("User is not authenticated");
+                return;
+            }
+
+            Console.WriteLine($"Current user: {AuthUser.CurrentUser.Login}");
+            isLoading = true;
+            StateHasChanged();
+
+            using var client = new HttpClient();
+            var response = await client.GetAsync(preferencesUrl);
+            Console.WriteLine($"Preferences API response status: {response.StatusCode}");
+
+            if (!response.IsSuccessStatusCode)
+            {
+                error = $"Failed to fetch preferences: {response.StatusCode}";
+                Console.WriteLine($"API error: {await response.Content.ReadAsStringAsync()}");
+                return;
+            }
+
+            var jsonResponse = await response.Content.ReadAsStringAsync();
+            Console.WriteLine($"API Response: {jsonResponse}");
+
+            var options = new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true
+            };
+
+            var allPreferences = JsonSerializer.Deserialize<List<UserPreference>>(jsonResponse, options);
+
+            if (allPreferences == null || !allPreferences.Any())
+            {
+                Console.WriteLine("No preferences found");
+                error = "No test results found";
+                return;
+            }
+
+            Console.WriteLine($"Found {allPreferences.Count} preferences");
+            matchedUsers = CalculateMatches(allPreferences);
+            Console.WriteLine($"Calculated {matchedUsers.Count} matches");
+        }
+        catch (HttpRequestException ex)
+        {
+            error = "Failed to connect to the server";
+            Console.WriteLine($"HTTP Request Error: {ex.Message}");
+            Console.WriteLine($"Stack trace: {ex.StackTrace}");
+        }
+        catch (JsonException ex)
+        {
+            error = "Failed to process server response";
+            Console.WriteLine($"JSON Error: {ex.Message}");
+            Console.WriteLine($"Stack trace: {ex.StackTrace}");
+        }
+        catch (Exception ex)
+        {
+            error = "An unexpected error occurred";
+            Console.WriteLine($"Error in OnInitializedAsync: {ex.Message}");
+            Console.WriteLine($"Stack trace: {ex.StackTrace}");
+        }
+        finally
+        {
+            isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private List<MatchedUser> CalculateMatches(List<UserPreference> allPreferences)
+    {
+        try
+        {
+            if (AuthUser.CurrentUser == null)
+            {
+                Console.WriteLine("CalculateMatches: User is not authenticated");
+                return new List<MatchedUser>();
+            }
+
+            var currentUserLogin = AuthUser.CurrentUser.Login;
+            Console.WriteLine($"Calculating matches for user: {currentUserLogin}");
+            
+            if (string.IsNullOrEmpty(currentUserLogin))
+            {
+                Console.WriteLine("Current user login is empty");
+                return new List<MatchedUser>();
+            }
+
+            var currentUserPreferences = allPreferences
+                .Where(p => p.Login == currentUserLogin)
+                .ToDictionary(p => p.Category, p => p.Answer);
+
+            Console.WriteLine($"Found {currentUserPreferences.Count} preferences for current user");
+
+            if (!currentUserPreferences.Any())
+            {
+                Console.WriteLine("No preferences found for current user");
+                return new List<MatchedUser>();
+            }
+
+            var matches = new Dictionary<string, MatchedUser>();
+            var otherUsersPreferences = allPreferences
+                .Where(p => p.Login != currentUserLogin)
+                .GroupBy(p => p.Login)
+                .ToDictionary(
+                    g => g.Key,
+                    g => g.ToDictionary(p => p.Category, p => p.Answer)
+                );
+
+            Console.WriteLine($"Found {otherUsersPreferences.Count} other users");
+
+            foreach (var (otherUserLogin, otherUserAnswers) in otherUsersPreferences)
+            {
+                int matchCount = 0;
+                var commonCategories = new List<string>();
+                int totalCategories = 0;
+
+                foreach (var (category, currentAnswer) in currentUserPreferences)
+                {
+                    if (otherUserAnswers.TryGetValue(category, out int otherAnswer))
+                    {
+                        totalCategories++;
+                        if (Math.Abs(currentAnswer - otherAnswer) <= 2)
+                        {
+                            matchCount++;
+                            if (Math.Abs(currentAnswer - otherAnswer) <= 1)
+                            {
+                                commonCategories.Add(category);
+                            }
+                        }
+                    }
+                }
+
+                if (totalCategories > 0)
+                {
+                    var matchPercentage = (matchCount * 100.0) / totalCategories;
+                    matches[otherUserLogin] = new MatchedUser
+                    {
+                        Login = otherUserLogin,
+                        MatchPercentage = matchPercentage,
+                        CommonCategories = string.Join(", ", commonCategories.Take(3))
+                    };
+                }
+            }
+
+            var result = matches.Values
+                .OrderByDescending(m => m.MatchPercentage)
+                .ToList();
+
+            Console.WriteLine($"Returning {result.Count} matches");
+            return result;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error in CalculateMatches: {ex.Message}");
+            Console.WriteLine($"Stack trace: {ex.StackTrace}");
+            throw;
+        }
+    }
+
+    private class UserPreference
+    {
+        public string Id { get; set; } = "";
+        public string Login { get; set; } = "";
+        public int Answer { get; set; }
+        public string Category { get; set; } = "";
+    }
+
+    private class MatchedUser
+    {
+        public string Login { get; set; } = "";
+        public double MatchPercentage { get; set; }
+        public string CommonCategories { get; set; } = "";
+    }
+}
