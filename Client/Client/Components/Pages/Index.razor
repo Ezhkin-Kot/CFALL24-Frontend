@@ -1,0 +1,55 @@
+@page "/index"
+
+<PageTitle>Welcome</PageTitle>
+
+<div class="welcome-container">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-md-6 text-center">
+                <div class="logo-container">
+                    <div class="logo-placeholder">
+                        Logo
+                    </div>
+                </div>
+                <div class="auth-buttons">
+                    <NavLink href="login" class="btn btn-primary btn-lg">Login</NavLink>
+                    <NavLink href="registration" class="btn btn-outline-primary btn-lg">Register</NavLink>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .welcome-container {
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background-color: #f8f9fa;
+    }
+
+    .logo-container {
+        text-align: center;
+        margin-bottom: 2rem;
+    }
+
+    .logo-placeholder {
+        width: 150px;
+        height: 150px;
+        background-color: #e9ecef;
+        border-radius: 10px;
+        margin: 0 auto;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #6c757d;
+        font-size: 1.2rem;
+    }
+
+    .auth-buttons {
+        display: flex;
+        gap: 1rem;
+        justify-content: center;
+    }
+</style>

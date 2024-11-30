@@ -1,15 +1,13 @@
-@page "/registration"
+@page "/login"
 @rendermode InteractiveServer
 @inject NavigationManager NavigationManager
-
-<h3>Registration</h3>
 
 <div class="container mt-5">
     <div class="row justify-content-center">
         <div class="col-md-6 col-lg-4">
             <div class="card shadow">
                 <div class="card-body">
-                    <h3 class="card-title text-center mb-4">Registration</h3>
+                    <h3 class="card-title text-center mb-4">Login</h3>
 
                     <div class="form-floating mb-3">
                         <input type="text"
@@ -44,7 +42,7 @@
                     </div>
 
                     <button class="btn btn-primary w-100 mb-3"
-                            @onclick="RegisterUser"
+                            @onclick="LoginUser"
                             disabled="@(_isProcessing || !IsValid)">
                         @if (_isProcessing)
                         {
@@ -53,13 +51,13 @@
                         }
                         else
                         {
-                            <span>Register</span>
+                            <span>Login</span>
                         }
                     </button>
 
                     <div class="text-center">
-                        Already have an account?
-                        <a href="/login" class="text-decoration-none">Login here</a>
+                        Don't have an account?
+                        <a href="/registration" class="text-decoration-none">Register here</a>
                     </div>
 
                     @if (!string.IsNullOrEmpty(_message))
@@ -82,11 +80,11 @@
     private bool _isError;
     
     private bool IsValid => !string.IsNullOrEmpty(_login) && 
-                            _login.Length >= 3 && 
-                            !string.IsNullOrEmpty(_password) && 
-                            _password.Length >= 6;
+                          _login.Length >= 3 && 
+                          !string.IsNullOrEmpty(_password) && 
+                          _password.Length >= 6;
 
-    private async Task RegisterUser()
+    private async Task LoginUser()
     {
         try
         {
@@ -101,26 +99,26 @@
                 _isError = true;
                 return;
             }
-
+            
             AuthUser authUser = new AuthUser();
 
             var success = await authUser.CreateUser(_login, _password);
-
+            
             if (success)
             {
-                _message = "Registration successful!";
+                _message = "Login successful!";
                 await Task.Delay(1000);
-                NavigationManager.NavigateTo("/login");
+                NavigationManager.NavigateTo("/");
             }
             else
             {
-                _message = "User with this login already exists";
+                _message = "Invalid login or password";
                 _isError = true;
             }
         }
         catch (Exception ex)
         {
-            _message = "Registration failed. Please try again later.";
+            _message = "An error occurred during login";
             _isError = true;
         }
         finally
